@@ -2,7 +2,7 @@
 /**
  * eWAY Legacy Direct XML Payments Gateway
  */
- 
+
 namespace Omnipay\Eway;
 
 use Omnipay\Common\AbstractGateway;
@@ -14,7 +14,6 @@ use Omnipay\Common\AbstractGateway;
  *
  * NOTE: The APIs called by this gateway are older legacy APIs, new integrations should instead
  * use eWAY Rapid.
- *
  */
 class DirectGateway extends AbstractGateway
 {
@@ -25,10 +24,10 @@ class DirectGateway extends AbstractGateway
 
     public function getDefaultParameters()
     {
-        return array(
+        return [
             'customerId' => '',
             'testMode' => false,
-        );
+        ];
     }
 
     public function getCustomerId()
@@ -41,27 +40,27 @@ class DirectGateway extends AbstractGateway
         return $this->setParameter('customerId', $value);
     }
 
-    public function authorize(array $parameters = array())
+    public function authorize(array $parameters = [])
     {
         return $this->createRequest('\Omnipay\Eway\Message\DirectAuthorizeRequest', $parameters);
     }
 
-    public function capture(array $parameters = array())
+    public function capture(array $parameters = [])
     {
         return $this->createRequest('\Omnipay\Eway\Message\DirectCaptureRequest', $parameters);
     }
 
-    public function purchase(array $parameters = array())
+    public function purchase(array $parameters = [])
     {
         return $this->createRequest('\Omnipay\Eway\Message\DirectPurchaseRequest', $parameters);
     }
 
-    public function refund(array $parameters = array())
+    public function refund(array $parameters = [])
     {
         return $this->createRequest('\Omnipay\Eway\Message\DirectRefundRequest', $parameters);
     }
 
-    public function void(array $parameters = array())
+    public function void(array $parameters = [])
     {
         return $this->createRequest('\Omnipay\Eway\Message\DirectVoidRequest', $parameters);
     }

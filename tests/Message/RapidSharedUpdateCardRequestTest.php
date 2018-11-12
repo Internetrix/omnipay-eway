@@ -4,16 +4,16 @@ namespace Omnipay\Eway\Message;
 
 use Omnipay\Tests\TestCase;
 
-class RapidSharedPurchaseRequestTest extends TestCase
+class RapidSharedUpdateCardRequestTest extends TestCase
 {
     public function setUp()
     {
-        $this->request = new RapidSharedPurchaseRequest($this->getHttpClient(), $this->getHttpRequest());
+        $this->request = new RapidSharedUpdateCardRequest($this->getHttpClient(), $this->getHttpRequest());
         $this->request->initialize([
             'apiKey' => 'my api key',
             'password' => 'secret',
-            'amount' => '10.00',
             'returnUrl' => 'https://www.example.com/return',
+            'cardReference' => '123456789',
         ]);
     }
 
@@ -22,86 +22,32 @@ class RapidSharedPurchaseRequestTest extends TestCase
         $this->request->initialize([
             'apiKey' => 'my api key',
             'password' => 'secret',
-            'partnerId' => '1234',
-            'transactionType' => 'Purchase',
-            'shippingMethod' => 'NextDay',
-            'amount' => '10.00',
-            'transactionId' => '999',
-            'description' => 'new car',
-            'currency' => 'AUD',
-            'invoiceReference' => 'INV-123',
-            'clientIp' => '127.0.0.1',
             'returnUrl' => 'https://www.example.com/return',
+            'cardReference' => '123456789',
             'card' => [
+                'title' => 'Mr',
                 'firstName' => 'Patrick',
                 'lastName' => 'Collison',
-                'shippingFirstName' => 'John',
-                'shippingLastName' => 'Smith',
-                'shippingAddress1' => 'Level 1',
-                'shippingAddress2' => '123 Test Lane',
-                'shippingState' => 'NSW',
-                'shippingCountry' => 'AU',
+                'country' => 'AU',
             ],
         ]);
 
         $data = $this->request->getData();
 
-        $this->assertSame('127.0.0.1', $data['CustomerIP']);
-        $this->assertSame('1234', $data['PartnerID']);
         $this->assertSame('Purchase', $data['TransactionType']);
-        $this->assertSame('NextDay', $data['ShippingMethod']);
+        $this->assertSame('UpdateTokenCustomer', $data['Method']);
         $this->assertSame('https://www.example.com/return', $data['RedirectUrl']);
-        $this->assertSame(1000, $data['Payment']['TotalAmount']);
-        $this->assertSame('999', $data['Payment']['InvoiceNumber']);
-        $this->assertSame('new car', $data['Payment']['InvoiceDescription']);
-        $this->assertSame('INV-123', $data['Payment']['InvoiceReference']);
-        $this->assertSame('AUD', $data['Payment']['CurrencyCode']);
+        $this->assertSame(0, $data['Payment']['TotalAmount']);
+        $this->assertSame('Mr', $data['Customer']['Title']);
         $this->assertSame('Patrick', $data['Customer']['FirstName']);
         $this->assertSame('Collison', $data['Customer']['LastName']);
-        $this->assertSame('John', $data['ShippingAddress']['FirstName']);
-        $this->assertSame('Smith', $data['ShippingAddress']['LastName']);
-        $this->assertSame('NSW', $data['ShippingAddress']['State']);
         $this->assertSame('au', $data['ShippingAddress']['Country']);
-    }
-
-    public function testGetDataWithItems()
-    {
-        $this->request->initialize([
-            'apiKey' => 'my api key',
-            'password' => 'secret',
-            'amount' => '10.00',
-            'transactionId' => '999',
-            'description' => 'new car',
-            'currency' => 'AUD',
-            'clientIp' => '127.0.0.1',
-            'returnUrl' => 'https://www.example.com/return',
-            'card' => [
-                'firstName' => 'Patrick',
-                'lastName' => 'Collison',
-            ],
-        ]);
-
-        $this->request->setItems([
-            ['name' => 'Floppy Disk', 'description' => 'MS-DOS', 'quantity' => 2, 'price' => 10],
-            ['name' => 'CD-ROM', 'description' => 'Windows 95', 'quantity' => 1, 'price' => 40],
-        ]);
-
-        $data = $this->request->getData();
-
-        $this->assertSame('Floppy Disk', $data['Items'][0]['SKU']);
-        $this->assertSame('MS-DOS', $data['Items'][0]['Description']);
-        $this->assertSame('2', $data['Items'][0]['Quantity']);
-        $this->assertSame('1000', $data['Items'][0]['UnitCost']);
-
-        $this->assertSame('CD-ROM', $data['Items'][1]['SKU']);
-        $this->assertSame('Windows 95', $data['Items'][1]['Description']);
-        $this->assertSame('1', $data['Items'][1]['Quantity']);
-        $this->assertSame('4000', $data['Items'][1]['UnitCost']);
+        $this->assertSame('123456789', $data['Customer']['TokenCustomerID']);
     }
 
     public function testSendSuccess()
     {
-        $this->setMockHttpResponse('RapidSharedPurchaseRequestSuccess.txt');
+        $this->setMockHttpResponse('RapidSharedUpdateCardRequestSuccess.txt');
         $response = $this->request->send();
 
         $this->assertFalse($response->isSuccessful());
@@ -110,14 +56,14 @@ class RapidSharedPurchaseRequestTest extends TestCase
         $this->assertSame('https://secure.ewaypayments.com/sharedpayment?AccessCode=F9802j0-O7sdVLnOcb_3IPryTxHDtKY8u_0pb10GbYq-Xjvbc-5Bc_LhI-oBIrTxTCjhOFn7Mq-CwpkLDja5-iu-Dr3DjVTr9u4yxSB5BckdbJqSA4WWydzDO0jnPWfBdKcWL', $response->getRedirectUrl());
         $this->assertNull($response->getRedirectData());
         $this->assertNull($response->getTransactionReference());
-        $this->assertNull($response->getCardReference());
         $this->assertNull($response->getMessage());
         $this->assertNull($response->getCode());
+        $this->assertNotNull($response->getCardReference());
     }
 
     public function testSendFailure()
     {
-        $this->setMockHttpResponse('RapidSharedPurchaseRequestFailure.txt');
+        $this->setMockHttpResponse('RapidSharedUpdateCardRequestFailure.txt');
         $response = $this->request->send();
 
         $this->assertFalse($response->isSuccessful());
@@ -126,8 +72,7 @@ class RapidSharedPurchaseRequestTest extends TestCase
         $this->assertNull($response->getRedirectData());
         $this->assertNull($response->getCardReference());
         $this->assertNull($response->getTransactionReference());
-        $this->assertSame('Invalid TotalAmount', $response->getMessage());
-        $this->assertSame('V6011', $response->getCode());
+        $this->assertSame('V6040', $response->getCode());
     }
 
     public function testCancelUrl()

@@ -2,7 +2,7 @@
 /**
  * eWAY Rapid Abstract Request
  */
- 
+
 namespace Omnipay\Eway\Message;
 
 /**
@@ -16,6 +16,7 @@ abstract class AbstractRequest extends \Omnipay\Common\Message\AbstractRequest
 {
     protected $liveEndpoint = 'https://api.ewaypayments.com';
     protected $testEndpoint = 'https://api.sandbox.ewaypayments.com';
+    protected $action;
 
     public function getApiKey()
     {
@@ -83,7 +84,23 @@ abstract class AbstractRequest extends \Omnipay\Common\Message\AbstractRequest
     {
         return $this->setParameter('invoiceReference', $value);
     }
-    
+
+    /**
+     * @return string|NULL
+     */
+    public function getAction()
+    {
+        return $this->action;
+    }
+
+    /**
+     * @param string $action
+     */
+    public function setAction($action)
+    {
+        $this->action = $action;
+    }
+
     protected function getBaseData()
     {
         $data = array();

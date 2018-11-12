@@ -6,6 +6,7 @@
 namespace Omnipay\Eway;
 
 use Omnipay\Common\AbstractGateway;
+use Omnipay\Omnipay;
 
 /**
  * eWAY Rapid Transparent Redirect Gateway
@@ -13,9 +14,9 @@ use Omnipay\Common\AbstractGateway;
  * This class forms the gateway class for eWAY Rapid Transparent Redirect requests.
  * The gateway is just called Eway_Rapid as it was the first implemented.
  *
- * The eWAY Rapid gateways use an API Key and Password for authentication. 
+ * The eWAY Rapid gateways use an API Key and Password for authentication.
  *
- * There is also a test sandbox environment, which uses a separate endpoint and 
+ * There is also a test sandbox environment, which uses a separate endpoint and
  * API key and password. To access the eWAY Sandbox requires an eWAY Partner account.
  * https://myeway.force.com/success/partner-registration
  *
@@ -35,11 +36,11 @@ class RapidGateway extends AbstractGateway
 
     public function getDefaultParameters()
     {
-        return array(
+        return [
             'apiKey' => '',
             'password' => '',
             'testMode' => false,
-        );
+        ];
     }
 
     public function getApiKey()
@@ -62,18 +63,30 @@ class RapidGateway extends AbstractGateway
         return $this->setParameter('password', $value);
     }
 
-    public function purchase(array $parameters = array())
+    public function purchase(array $parameters = [])
     {
+        if (!empty($parameters['cardTransactionType']) && $parameters['cardTransactionType'] === 'continuous') {
+            $gateway = Omnipay::create('Eway_RapidDirect');
+            $gateway->setApiKey($this->getApiKey());
+            $gateway->setPassword($this->getPassword());
+            $gateway->setTestMode($this->getTestMode());
+            return $gateway->createRequest('\Omnipay\Eway\Message\RapidDirectPurchaseRequest', $parameters);
+        }
         return $this->createRequest('\Omnipay\Eway\Message\RapidPurchaseRequest', $parameters);
     }
 
-    public function completePurchase(array $parameters = array())
+    public function completePurchase(array $parameters = [])
     {
         return $this->createRequest('\Omnipay\Eway\Message\RapidCompletePurchaseRequest', $parameters);
     }
 
-    public function refund(array $parameters = array())
+    public function refund(array $parameters = [])
     {
         return $this->createRequest('\Omnipay\Eway\Message\RefundRequest', $parameters);
+    }
+
+    public function createCard(array $parameters = [])
+    {
+        return $this->createRequest('\Omnipay\Eway\Message\RapidCreateCardRequest', $parameters);
     }
 }

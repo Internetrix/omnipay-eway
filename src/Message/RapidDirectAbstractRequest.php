@@ -2,7 +2,7 @@
 /**
  * eWAY Rapid Direct Abstract Request
  */
- 
+
 namespace Omnipay\Eway\Message;
 
 /**
@@ -18,7 +18,7 @@ abstract class RapidDirectAbstractRequest extends AbstractRequest
     {
         return $this->getParameter('encryptedCardNumber');
     }
-    
+
     /**
      * Sets the encrypted card number, for use when submitting card data
      * encrypted using eWAY's client side encryption.
@@ -30,7 +30,7 @@ abstract class RapidDirectAbstractRequest extends AbstractRequest
     {
         return $this->setParameter('encryptedCardNumber', $value);
     }
-    
+
     public function getEncryptedCardCvv()
     {
         return $this->getParameter('encryptedCardCvv');
@@ -47,32 +47,35 @@ abstract class RapidDirectAbstractRequest extends AbstractRequest
     {
         return $this->setParameter('encryptedCardCvv', $value);
     }
-    
+
     protected function getBaseData()
     {
-
         $data = parent::getBaseData();
         $data['TransactionType'] = $this->getTransactionType();
-        
+
         if ($this->getCardReference()) {
             $data['Customer']['TokenCustomerID'] = $this->getCardReference();
         } else {
             $this->validate('card');
         }
-        
+
         if ($this->getCard()) {
-            $data['Customer']['CardDetails'] = array();
+            $data['Customer']['CardDetails'] = [];
             $data['Customer']['CardDetails']['Name'] = $this->getCard()->getName();
-            $data['Customer']['CardDetails']['ExpiryMonth'] = $this->getCard()->getExpiryDate('m');
-            $data['Customer']['CardDetails']['ExpiryYear'] = $this->getCard()->getExpiryDate('y');
+
+            if ($this->getCard()->getExpiryYear() && $this->getCard()->getExpiryMonth()) {
+                // Expiry date not required if token present
+                $data['Customer']['CardDetails']['ExpiryMonth'] = $this->getCard()->getExpiryDate('m');
+                $data['Customer']['CardDetails']['ExpiryYear'] = $this->getCard()->getExpiryDate('y');
+            }
             $data['Customer']['CardDetails']['CVN'] = $this->getCard()->getCvv();
-            
+
             if ($this->getEncryptedCardNumber()) {
                 $data['Customer']['CardDetails']['Number'] = $this->getEncryptedCardNumber();
             } else {
                 $data['Customer']['CardDetails']['Number'] = $this->getCard()->getNumber();
             }
-            
+
             if ($this->getEncryptedCardCvv()) {
                 $data['Customer']['CardDetails']['CVN'] = $this->getEncryptedCardCvv();
             } else {
@@ -83,7 +86,7 @@ abstract class RapidDirectAbstractRequest extends AbstractRequest
                 $data['Customer']['CardDetails']['StartMonth'] = $this->getCard()->getStartDate('m');
                 $data['Customer']['CardDetails']['StartYear'] = $this->getCard()->getStartDate('y');
             }
-            
+
             if ($this->getCard()->getIssueNumber()) {
                 $data['Customer']['CardDetails']['IssueNumber'] = $this->getCard()->getIssueNumber();
             }
@@ -98,10 +101,12 @@ abstract class RapidDirectAbstractRequest extends AbstractRequest
 
     public function sendData($data)
     {
-        $httpResponse = $this->httpClient->post($this->getEndpoint(), null, json_encode($data))
-            ->setAuth($this->getApiKey(), $this->getPassword())
-            ->send();
+        $headers = [
+            'Authorization' => 'Basic ' . base64_encode($this->getApiKey() . ':' . $this->getPassword())
+        ];
 
-        return $this->response = new RapidResponse($this, $httpResponse->json());
+        $httpResponse = $this->httpClient->request('POST', $this->getEndpoint(), $headers, json_encode($data));
+
+        return $this->response = new RapidResponse($this, json_decode((string) $httpResponse->getBody(), true));
     }
 }
